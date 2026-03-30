@@ -21,7 +21,7 @@ module BusinessCentral
               id: args.fetch(:id, nil)
             }
           ]
-        )
+        ).freeze
       end
 
       def find_all
@@ -42,27 +42,35 @@ module BusinessCentral
         Request.post(@client, build_url, params)
       end
 
-      def update(id, params = {})
-        object = find_by_id(id).merge(params)
-        Request.patch(@client, build_url(object_id: id), object[:etag], params)
+      def update(id, params = {}, etag: nil)
+        unless etag
+          object = find_by_id(id)
+          etag = object[:etag]
+        end
+        Request.patch(@client, build_url(object_id: id), etag, params)
       end
 
-      def destroy(id)
-        object = find_by_id(id)
-        Request.delete(@client, build_url(object_id: id), object[:etag])
+      def destroy(id, etag: nil)
+        unless etag
+          object = find_by_id(id)
+          etag = object[:etag]
+        end
+        Request.delete(@client, build_url(object_id: id), etag)
       end
       alias delete destroy
 
       def method_missing(object_name, **params)
-        @object_path << {
+        new_path = @object_path + [{
           path: object_name.to_s.to_camel_case,
           id: params.fetch(:id, nil)
-        }
+        }]
+
         if BusinessCentral::Object.const_defined?(object_name.to_s.to_class_sym)
           klass = BusinessCentral::Object.const_get(object_name.to_s.to_class_sym)
-          return klass.new(client, **params.merge!({ object_path: @object_path }))
+          return klass.new(client, **params, object_path: new_path)
         end
-        self
+
+        self.class.new(client, object_path: new_path)
       end
 
       def respond_to_missing?(_object_name, *_params)
