@@ -24,7 +24,7 @@ class BusinessCentral::Object::BaseTest < Minitest::Test
       .to_return(
         status: 200,
         body: {
-          'value': [
+          value: [
             {
               displayName: 'vendor1'
             }
@@ -41,7 +41,7 @@ class BusinessCentral::Object::BaseTest < Minitest::Test
       .to_return(
         status: 200,
         body: {
-          'value': [
+          value: [
             {
               dimensionValueCode: 'SALES'
             }
