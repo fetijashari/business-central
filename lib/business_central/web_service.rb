@@ -45,26 +45,32 @@ module BusinessCentral
       )
     end
 
-    def patch(params = {})
+    def patch(params = {}, etag: nil)
       raise InvalidObjectURLException if @object_url.to_s.blank?
 
-      object = get
+      unless etag
+        result = get
+        etag = result[:etag]
+      end
       Object::Request.patch(
         @client,
         build_url,
-        object[:etag],
+        etag,
         params
       )
     end
 
-    def delete
+    def delete(etag: nil)
       raise InvalidObjectURLException if @object_url.to_s.blank?
 
-      object = get
+      unless etag
+        result = get
+        etag = result[:etag]
+      end
       Object::Request.delete(
         @client,
         build_url,
-        object[:etag]
+        etag
       )
     end
 
