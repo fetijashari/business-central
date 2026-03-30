@@ -37,6 +37,10 @@ Layout/EmptyLineAfterGuardClause:
 Gemspec/RequiredRubyVersion:
   Enabled: false
 
+Gemspec/DevelopmentDependencies:
+  Enabled: false
+
+
 Naming/VariableNumber:
   AllowedIdentifiers:
     - TLS1_2
