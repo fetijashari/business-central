@@ -6,7 +6,7 @@ module BusinessCentral
       using Refinements::Strings
 
       def update(id, data)
-        object = find_all
+        object = find_by_id(id)
         url = "#{build_url(object_id: id)}/content"
         Request.call(:patch, @client, url, etag: object[:etag], params: {}) do |request|
           request['Content-Type'] = 'application/octet-stream'
