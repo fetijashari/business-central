@@ -6,9 +6,12 @@ module BusinessCentral
 
     include BusinessCentral::Object::ObjectHelper
 
-    DEFAULT_LOGIN_URL = 'https://login.microsoftonline.com/common'
+    DEFAULT_LOGIN_URL = 'https://login.microsoftonline.com/common'.freeze
 
-    DEFAULT_URL = 'https://api.businesscentral.dynamics.com/v2.0/production/api/v1.0'
+    DEFAULT_URL = 'https://api.businesscentral.dynamics.com/v2.0/production/api/v1.0'.freeze
+
+    DEFAULT_OPEN_TIMEOUT = 30
+    DEFAULT_READ_TIMEOUT = 60
 
     attr_reader :username,
                 :password,
@@ -19,7 +22,10 @@ module BusinessCentral
                 :oauth2_login_url,
                 :oauth2_access_token,
                 :default_company_id,
-                :debug
+                :debug,
+                :debug_output,
+                :open_timeout,
+                :read_timeout
 
     alias access_token oauth2_access_token
 
@@ -34,6 +40,11 @@ module BusinessCentral
       @oauth2_login_url = opts.delete(:oauth2_login_url) || DEFAULT_LOGIN_URL
       @default_company_id = opts.delete(:default_company_id)
       @debug = opts.delete(:debug) || false
+      @debug_output = opts.delete(:debug_output) || $stdout
+      @open_timeout = opts.delete(:open_timeout) || DEFAULT_OPEN_TIMEOUT
+      @read_timeout = opts.delete(:read_timeout) || DEFAULT_READ_TIMEOUT
+
+      validate_urls!
     end
 
     def authorize(params = {}, oauth_authorize_callback: '')
@@ -74,7 +85,7 @@ module BusinessCentral
     private
 
     def oauth2_client
-      OAuth2::Client.new(
+      @oauth2_client ||= OAuth2::Client.new(
         @application_id,
         @secret_key,
         site: @oauth2_login_url,
@@ -90,7 +101,24 @@ module BusinessCentral
       when 'invalid_grant'
         raise InvalidGrantException, error.message
       end
-      raise ApiException, error.message
+      raise ApiException.new(error.message)
+    end
+
+    def validate_urls!
+      validate_url!(@url, 'url')
+      validate_url!(@web_service_url, 'web_service_url')
+      validate_url!(@oauth2_login_url, 'oauth2_login_url')
+    end
+
+    def validate_url!(url, name)
+      return if url.nil?
+
+      uri = URI.parse(url)
+      return if uri.is_a?(URI::HTTPS)
+
+      raise ArgumentError, "#{name} must use HTTPS scheme, got: #{uri.scheme || 'none'}"
+    rescue URI::InvalidURIError => e
+      raise ArgumentError, "#{name} is not a valid URL: #{e.message}"
     end
   end
 end
