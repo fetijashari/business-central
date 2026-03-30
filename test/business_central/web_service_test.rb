@@ -76,7 +76,7 @@ class BusinessCentral::WebServiceTest < Minitest::Test
       )
 
     response = @web_service.object("Company('?')", test_company_name).patch(
-      display_name: 'business4'
+      { display_name: 'business4' }
     )
     assert_equal response[:display_name], 'business4'
   end
