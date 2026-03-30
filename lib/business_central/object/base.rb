@@ -24,18 +24,19 @@ module BusinessCentral
         ).freeze
       end
 
-      def find_all
-        Request.get(@client, build_url)
+      def find_all(**query_options)
+        Request.get(@client, build_url(**query_options))
       end
       alias all find_all
 
-      def find_by_id(id)
-        Request.get(@client, build_url(object_id: id))
+      def find_by_id(id, **query_options)
+        Request.get(@client, build_url(object_id: id, **query_options))
       end
       alias find find_by_id
 
-      def where(query = '', *values)
-        Request.get(@client, build_url(filter: FilterQuery.sanitize(query, values)))
+      def where(query = '', *values, **query_options)
+        filter = FilterQuery.sanitize(query, values)
+        Request.get(@client, build_url(filter:, **query_options))
       end
 
       def create(params = {})
@@ -79,12 +80,13 @@ module BusinessCentral
 
       private
 
-      def build_url(object_id: '', filter: '')
+      def build_url(object_id: '', filter: '', **query_options)
         URLBuilder.new(
           base_url: client.url,
           object_path: @object_path,
           object_id:,
-          filter:
+          filter:,
+          **query_options
         ).build
       end
     end
