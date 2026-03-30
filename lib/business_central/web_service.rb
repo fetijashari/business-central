@@ -8,20 +8,20 @@ module BusinessCentral
 
     attr_reader :url, :object_url
 
-    def initialize(client:, **options)
+    def initialize(client:, url: nil, object_url: nil)
       @client = client
-      opts = options.dup
-      @url = opts.delete(:url) || DEFAULT_URL
+      @url = url || client.web_service_url || DEFAULT_URL
+      @object_url = object_url
     end
 
     def object(object_url = '', *values)
-      if values.empty?
-        @object_url = object_url
-        return self
-      end
+      resolved = if values.empty?
+                   object_url
+                 else
+                   Object::URLBuilder.sanitize(object_url, values)
+                 end
 
-      @object_url = Object::URLBuilder.sanitize(object_url, values)
-      self
+      self.class.new(client: @client, url: @url, object_url: resolved)
     end
 
     def get(query = '', *values)
