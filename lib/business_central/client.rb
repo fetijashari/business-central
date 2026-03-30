@@ -106,13 +106,34 @@ module BusinessCentral
     end
 
     def handle_error(error)
-      case error.code
+      error_code = resolve_error_code(error)
+      case error_code
       when 'invalid_client'
         raise InvalidClientException
       when 'invalid_grant'
         raise InvalidGrantException, error.message
       end
       raise ApiException, error.message
+    end
+
+    def resolve_error_code(error)
+      code = error.code
+      return code if %w[invalid_client invalid_grant].include?(code)
+
+      extract_error_code(error) || code
+    end
+
+    def extract_error_code(error)
+      resp = error.response
+      if resp.is_a?(Hash)
+        desc = resp[:error_description].to_s
+        return 'invalid_grant' if desc.include?('invalid_grant')
+        return 'invalid_client' if desc.include?('invalid_client')
+        return resp[:error] || resp['error']
+      end
+      resp.parsed['error'] if resp.respond_to?(:parsed)
+    rescue StandardError
+      nil
     end
 
     def validate_urls!
