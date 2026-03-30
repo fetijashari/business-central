@@ -15,7 +15,7 @@ class BusinessCentral::Object::AttachmentsTest < Minitest::Test
       .to_return(
         status: 200,
         body: {
-          'value': [
+          value: [
             {
               id: '111',
               fileName: 'attachment1.pdf'
@@ -49,7 +49,7 @@ class BusinessCentral::Object::AttachmentsTest < Minitest::Test
       .to_return(
         status: 200,
         body: {
-          'value': [
+          value: [
             {
               id: '333',
               fileName: 'attachment3.png'
