@@ -145,7 +145,7 @@ class BusinessCentral::ClientTest < Minitest::Test
   end
 
   def test_build_web_service_object
-    @client.web_service.object('Company/Vendors')
-    assert_equal @client.web_service.object_url, 'Company/Vendors'
+    ws = @client.web_service.object('Company/Vendors')
+    assert_equal 'Company/Vendors', ws.object_url
   end
 end

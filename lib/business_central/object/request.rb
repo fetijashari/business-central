@@ -51,13 +51,42 @@ module BusinessCentral
           http_class = HTTP_METHODS[method]
           raise ArgumentError, "Unsupported HTTP method: #{method}" unless http_class
 
-          request_with_retry(client) do
-            perform(http_class, client, url, method, { etag:, params: }, &block)
+          logged_request(method, url, client) do
+            request_with_retry(client) do
+              perform(http_class, client, url, method, { etag:, params: }, &block)
+            end
           end
         end
         alias call request
 
         private
+
+        def logged_request(method, url, client)
+          label = method.to_s.upcase
+          safe_url = sanitize_url(url)
+          client.logger.debug { "BC API #{label} #{safe_url}" }
+          start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+          result = yield
+
+          elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+          client.logger.debug { "BC API #{label} completed in #{elapsed.round(3)}s" }
+          result
+        rescue BusinessCentralError => e
+          elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+          client.logger.warn do
+            "BC API #{label} #{safe_url} failed: #{e.class} (#{elapsed.round(3)}s)"
+          end
+          raise
+        end
+
+        def sanitize_url(url)
+          uri = URI(url)
+          uri.query = '[filtered]' if uri.query
+          uri.to_s
+        rescue URI::InvalidURIError
+          '[invalid-url]'
+        end
 
         def request_with_retry(client)
           retries = 0

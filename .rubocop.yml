@@ -25,6 +25,9 @@ Style/Documentation:
 Style/NegatedIf:
   Enabled: false
 
+Metrics/AbcSize:
+  Max: 22
+
 Metrics/MethodLength:
   Max: 25
 

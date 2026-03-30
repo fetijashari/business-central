@@ -6,7 +6,7 @@ module BusinessCentral
       using Refinements::Strings
 
       def encode_url_object(object)
-        URI::RFC2396_Parser.new.escape(object)
+        URI::DEFAULT_PARSER.escape(object)
       end
 
       def encode_url_params(query)
@@ -15,7 +15,7 @@ module BusinessCentral
 
       def odata_encode(value)
         value = value.dup
-        value.gsub!('\'', "''") if value.instance_of?(String) && value =~ /'/
+        value.gsub!("'", "''") if value.instance_of?(String) && value.include?("'")
         value.to_s
       end
 
@@ -24,6 +24,7 @@ module BusinessCentral
       def replace_template_with_value(query, values)
         query = query.dup
         return replace_template_with_hash_values(query, values) if values.first.is_a?(Hash)
+
         replace_template_with_array_values(query, values)
       end
 
