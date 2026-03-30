@@ -11,12 +11,20 @@ class BusinessCentral::Object::BaseTest < Minitest::Test
     )
   end
 
-  def test_client_responds_to_any_method_object
-    assert(@client.respond_to?(:random_object_that_does_not_exist))
+  def test_client_responds_to_known_entity
+    assert(@client.respond_to?(:vendors))
   end
 
-  def test_respond_to_chaining_objects
-    assert(@client.vendors.respond_to?(:random_object_that_does_not_exist))
+  def test_client_does_not_respond_to_unknown_entity
+    refute(@client.respond_to?(:random_object_that_does_not_exist))
+  end
+
+  def test_respond_to_chaining_with_known_entity
+    assert(@client.vendors.respond_to?(:default_dimensions))
+  end
+
+  def test_chaining_does_not_respond_to_unknown
+    refute(@client.vendors.respond_to?(:random_object_that_does_not_exist))
   end
 
   def test_find_all_for_vendor_object
