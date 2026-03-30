@@ -12,7 +12,7 @@ module Refinements
       end
 
       # Convert string to CamelCase
-      def to_camel_case(uppercase_first_letter = false)
+      def to_camel_case(uppercase_first_letter: false)
         string = self
         string = if uppercase_first_letter
                    string.sub(/^[a-z\d]*/, &:capitalize)
@@ -26,7 +26,7 @@ module Refinements
 
       # Convert string to snake_case
       def to_snake_case
-        gsub(/::/, '/')
+        gsub('::', '/')
           .gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
           .gsub(/([a-z\d])([A-Z])/, '\1_\2')
           .tr('-', '_')
@@ -35,7 +35,7 @@ module Refinements
 
       # Convert to class symbol
       def to_class_sym
-        to_camel_case(true).to_s.to_sym
+        to_camel_case(uppercase_first_letter: true).to_s.to_sym
       end
     end
   end
