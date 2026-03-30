@@ -18,9 +18,33 @@ module BusinessCentral
     end
   end
 
+  class ForbiddenException < BusinessCentralError
+    def message
+      'Forbidden - Insufficient permissions for this operation'
+    end
+  end
+
   class NotFoundException < BusinessCentralError
     def message
       'Not Found - The URL provided cannot be found'
+    end
+  end
+
+  class ConflictException < BusinessCentralError
+  end
+
+  class BadRequestException < BusinessCentralError
+  end
+
+  class UnprocessableEntityException < BusinessCentralError
+  end
+
+  class RateLimitException < BusinessCentralError
+    attr_reader :retry_after
+
+    def initialize(retry_after = nil)
+      @retry_after = retry_after
+      super("Rate limited by API. Retry after #{retry_after || 'unknown'} seconds")
     end
   end
 
