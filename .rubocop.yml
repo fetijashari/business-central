@@ -9,6 +9,10 @@
 #
 # See https://github.com/rubocop-hq/rubocop/blob/master/manual/configuration.md
 
+AllCops:
+  SuggestExtensions: false
+  NewCops: enable
+
 Layout/LineLength:
   Max: 100
 
@@ -29,3 +33,10 @@ Style/ClassAndModuleChildren:
 
 Layout/EmptyLineAfterGuardClause:
   Enabled: false
+
+Gemspec/RequiredRubyVersion:
+  Enabled: false
+
+Naming/VariableNumber:
+  AllowedIdentifiers:
+    - TLS1_2
