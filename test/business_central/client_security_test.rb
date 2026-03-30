@@ -82,9 +82,9 @@ class BusinessCentral::ClientSecurityTest < Minitest::Test
     end
   end
 
-  def test_allows_nil_web_service_url
+  def test_web_service_url_has_default
     client = BusinessCentral::Client.new
-    assert_nil client.web_service_url
+    assert_match(%r{^https://.*ODataV4$}, client.web_service_url)
   end
 
   def test_rejects_file_protocol_url
