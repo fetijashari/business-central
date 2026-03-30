@@ -7,11 +7,17 @@ module BusinessCentral
     include BusinessCentral::Object::ObjectHelper
 
     DEFAULT_LOGIN_URL = 'https://login.microsoftonline.com/common'
-
-    DEFAULT_URL = 'https://api.businesscentral.dynamics.com/v2.0/production/api/v1.0'
-
+    DEFAULT_BC_HOST = 'https://api.businesscentral.dynamics.com'
+    DEFAULT_ENVIRONMENT = 'production'
+    DEFAULT_API_VERSION = 'v1.0'
+    DEFAULT_SCOPE = 'https://api.businesscentral.dynamics.com/.default'
     DEFAULT_OPEN_TIMEOUT = 30
     DEFAULT_READ_TIMEOUT = 60
+    DEFAULT_MAX_RETRIES = 3
+    DEFAULT_RETRY_DELAY = 1
+
+    # Keep for backward compatibility
+    DEFAULT_URL = "#{DEFAULT_BC_HOST}/v2.0/#{DEFAULT_ENVIRONMENT}/api/#{DEFAULT_API_VERSION}".freeze
 
     attr_reader :username,
                 :password,
@@ -21,17 +27,24 @@ module BusinessCentral
                 :web_service_url,
                 :oauth2_login_url,
                 :oauth2_access_token,
+                :oauth2_scope,
                 :default_company_id,
+                :environment,
+                :tenant_id,
+                :api_version,
                 :debug,
                 :debug_output,
                 :open_timeout,
-                :read_timeout
+                :read_timeout,
+                :max_retries,
+                :retry_delay
 
     alias access_token oauth2_access_token
 
     def initialize(options = {})
       opts = options.dup
       assign_credentials(opts)
+      assign_environment(opts)
       assign_urls(opts)
       assign_options(opts)
       validate_urls!
@@ -39,6 +52,7 @@ module BusinessCentral
 
     def authorize(params = {}, oauth_authorize_callback: '')
       params[:redirect_uri] = oauth_authorize_callback
+      params[:scope] ||= @oauth2_scope
       begin
         oauth2_client.auth_code.authorize_url(params)
       rescue OAuth2::Error => e
@@ -47,7 +61,11 @@ module BusinessCentral
     end
 
     def request_token(code = '', oauth_token_callback: '')
-      oauth2_client.auth_code.get_token(code, redirect_uri: oauth_token_callback)
+      oauth2_client.auth_code.get_token(
+        code,
+        redirect_uri: oauth_token_callback,
+        scope: @oauth2_scope
+      )
     rescue OAuth2::Error => e
       handle_error(e)
     end
@@ -79,12 +97,19 @@ module BusinessCentral
       @password = opts.delete(:password)
       @application_id = opts.delete(:application_id)
       @secret_key = opts.delete(:secret_key)
+      @oauth2_scope = opts.delete(:oauth2_scope) || DEFAULT_SCOPE
+    end
+
+    def assign_environment(opts)
+      @environment = opts.delete(:environment) || DEFAULT_ENVIRONMENT
+      @tenant_id = opts.delete(:tenant_id)
+      @api_version = opts.delete(:api_version) || DEFAULT_API_VERSION
     end
 
     def assign_urls(opts)
-      @url = opts.delete(:url) || DEFAULT_URL
-      @web_service_url = opts.delete(:web_service_url)
       @oauth2_login_url = opts.delete(:oauth2_login_url) || DEFAULT_LOGIN_URL
+      @url = opts.delete(:url) || build_api_url
+      @web_service_url = opts.delete(:web_service_url) || build_odata_url
     end
 
     def assign_options(opts)
@@ -93,6 +118,20 @@ module BusinessCentral
       @debug_output = opts.delete(:debug_output) || $stdout
       @open_timeout = opts.delete(:open_timeout) || DEFAULT_OPEN_TIMEOUT
       @read_timeout = opts.delete(:read_timeout) || DEFAULT_READ_TIMEOUT
+      @max_retries = opts.delete(:max_retries) || DEFAULT_MAX_RETRIES
+      @retry_delay = opts.delete(:retry_delay) || DEFAULT_RETRY_DELAY
+    end
+
+    def build_api_url
+      base = "#{DEFAULT_BC_HOST}/v2.0"
+      base += "/#{@tenant_id}" if @tenant_id
+      "#{base}/#{@environment}/api/#{@api_version}"
+    end
+
+    def build_odata_url
+      base = "#{DEFAULT_BC_HOST}/v2.0"
+      base += "/#{@tenant_id}" if @tenant_id
+      "#{base}/#{@environment}/ODataV4"
     end
 
     def oauth2_client

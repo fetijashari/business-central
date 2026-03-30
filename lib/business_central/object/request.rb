@@ -19,6 +19,7 @@ module BusinessCentral
         verify_mode: OpenSSL::SSL::VERIFY_PEER,
         min_version: :TLS1_2
       }.freeze
+
       class << self
         def get(client, url)
           request(:get, client, url)
@@ -50,18 +51,40 @@ module BusinessCentral
           http_class = HTTP_METHODS[method]
           raise ArgumentError, "Unsupported HTTP method: #{method}" unless http_class
 
-          handle_response do
-            uri = URI(url)
-            req = build_request(http_class, uri, method, etag, params, &block)
-            apply_auth(req, client)
-            execute(uri, client, req)
+          request_with_retry(client) do
+            perform(http_class, client, url, method, { etag:, params: }, &block)
           end
         end
         alias call request
 
         private
 
-        def build_request(http_class, uri, method, etag, params)
+        def request_with_retry(client)
+          retries = 0
+          begin
+            yield
+          rescue RateLimitException => e
+            retries += 1
+            raise if retries > client.max_retries
+
+            sleep(e.retry_after || (client.retry_delay * (2**(retries - 1))))
+            retry
+          end
+        end
+
+        def perform(http_class, client, url, method, options, &block)
+          handle_response do
+            uri = URI(url)
+            req = build_request(http_class, uri, method, options, &block)
+            apply_auth(req, client)
+            execute(uri, client, req)
+          end
+        end
+
+        def build_request(http_class, uri, method, options)
+          etag = options[:etag]
+          params = options[:params]
+
           req = http_class.new(uri)
           req['If-Match'] = etag unless etag.to_s.strip.empty?
           req['Accept'] = 'application/json'
@@ -107,24 +130,52 @@ module BusinessCentral
           return response if Response.success?(status)
           return true if Response.success_no_content?(status)
 
-          raise_status_error(status, response)
+          raise_status_error(status, raw, response)
         end
 
-        def raise_status_error(status, response)
+        def raise_status_error(status, raw, response)
+          raise_rate_limit(raw) if Response.rate_limited?(status)
+          raise_http_error(status, response)
+          raise_bc_error(status, response)
+        end
+
+        def raise_http_error(status, response)
           raise UnauthorizedException if Response.unauthorized?(status)
+          raise ForbiddenException if Response.forbidden?(status)
           raise NotFoundException if Response.not_found?(status)
-
-          raise_api_error(status, response)
+          raise_detailed_http_error(status, response)
         end
 
-        def raise_api_error(status, response)
-          error = response&.fetch(:error, nil)
-          if error
-            raise CompanyNotFoundException if error[:code] == 'Internal_CompanyNotFound'
-            raise ApiException, "#{status} - #{error[:code]} #{error[:message]}"
-          end
+        def raise_detailed_http_error(status, response)
+          msg = error_message(status, response)
+          raise ConflictException, msg if Response.conflict?(status)
+          raise UnprocessableEntityException, msg if Response.unprocessable?(status)
+          raise ApiException, "#{status} - Server error" if Response.server_error?(status)
+        end
 
+        def raise_rate_limit(raw)
+          raise RateLimitException, raw['Retry-After']&.to_i
+        end
+
+        def raise_bc_error(status, response)
+          error = response&.fetch(:error, nil)
+          raise_bc_code_error(status, error) if error
           raise ApiException, "#{status} - API call failed"
+        end
+
+        def raise_bc_code_error(status, error)
+          code = error[:code]
+          raise CompanyNotFoundException if code == 'Internal_CompanyNotFound'
+          raise ConflictException, error[:message] if code&.match?(/^EditConflict/)
+          raise ForbiddenException if code&.match?(/^Permission/)
+          raise ApiException, "#{status} - #{code} #{error[:message]}"
+        end
+
+        def error_message(status, response)
+          error = response&.fetch(:error, nil)
+          return "#{status} - #{error[:code]}: #{error[:message]}" if error
+
+          "#{status} - API call failed"
         end
       end
     end
