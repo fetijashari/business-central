@@ -15,7 +15,7 @@ class BusinessCentral::Object::PictureTest < Minitest::Test
       .to_return(
         status: 200,
         body: {
-          'value': [
+          value: [
             {
               id: 112,
               width: 500,
