@@ -13,15 +13,16 @@ module BusinessCentral
 
       def update(parent_id:, attachment_id:, **params)
         url = "#{build_url}(parentId=#{parent_id},id=#{attachment_id})/content"
-        Request.call(:patch, @client, url, etag: '', params: {}) do |request|
-          request['Content-Type'] = 'application/json'
-          request['If-Match'] = 'application/json'
-          request.body = Request.convert(params)
+        attachment = find_by_id(attachment_id)
+        Request.call(:patch, @client, url, etag: attachment[:etag], params: {}) do |request|
+          request['Content-Type'] = 'application/octet-stream'
+          request.body = params[:content] || Request.convert(params)
         end
       end
 
       def destroy(id)
-        Request.call(:delete, @client, build_url(object_id: id), etag: '')
+        attachment = find_by_id(id)
+        Request.call(:delete, @client, build_url(object_id: id), etag: attachment[:etag])
       end
     end
   end
