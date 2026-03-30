@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'oauth2'
 require 'oauth2/error'
 require 'net/http'
@@ -7,6 +9,7 @@ require 'refinements/strings'
 
 require 'business_central/object/url_helper'
 require 'business_central/object/object_helper'
+require 'business_central/object/filtered_debug_output'
 require 'business_central/object/response'
 require 'business_central/object/request'
 require 'business_central/object/filter_query'
