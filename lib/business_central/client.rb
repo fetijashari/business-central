@@ -16,7 +16,6 @@ module BusinessCentral
     DEFAULT_MAX_RETRIES = 3
     DEFAULT_RETRY_DELAY = 1
 
-    # Keep for backward compatibility
     DEFAULT_URL = "#{DEFAULT_BC_HOST}/v2.0/#{DEFAULT_ENVIRONMENT}/api/#{DEFAULT_API_VERSION}".freeze
 
     attr_reader :username,
@@ -37,7 +36,8 @@ module BusinessCentral
                 :open_timeout,
                 :read_timeout,
                 :max_retries,
-                :retry_delay
+                :retry_delay,
+                :logger
 
     alias access_token oauth2_access_token
 
@@ -53,20 +53,24 @@ module BusinessCentral
     def authorize(params = {}, oauth_authorize_callback: '')
       params[:redirect_uri] = oauth_authorize_callback
       params[:scope] ||= @oauth2_scope
-      begin
-        oauth2_client.auth_code.authorize_url(params)
-      rescue OAuth2::Error => e
-        handle_error(e)
-      end
+      @logger.info { 'BC OAuth2: Starting authorization flow' }
+      oauth2_client.auth_code.authorize_url(params)
+    rescue OAuth2::Error => e
+      @logger.warn { "BC OAuth2: Authorization failed - #{e.code}" }
+      handle_error(e)
     end
 
     def request_token(code = '', oauth_token_callback: '')
-      oauth2_client.auth_code.get_token(
+      @logger.info { 'BC OAuth2: Requesting token' }
+      token = oauth2_client.auth_code.get_token(
         code,
         redirect_uri: oauth_token_callback,
         scope: @oauth2_scope
       )
+      @logger.info { 'BC OAuth2: Token acquired' }
+      token
     rescue OAuth2::Error => e
+      @logger.warn { "BC OAuth2: Token request failed - #{e.code}" }
       handle_error(e)
     end
 
@@ -81,8 +85,12 @@ module BusinessCentral
     end
 
     def refresh_token
-      @oauth2_access_token.refresh!
+      @logger.info { 'BC OAuth2: Refreshing token' }
+      result = @oauth2_access_token.refresh!
+      @logger.info { 'BC OAuth2: Token refreshed' }
+      result
     rescue OAuth2::Error => e
+      @logger.warn { "BC OAuth2: Token refresh failed - #{e.code}" }
       handle_error(e)
     end
 
@@ -114,12 +122,21 @@ module BusinessCentral
 
     def assign_options(opts)
       @default_company_id = opts.delete(:default_company_id)
+      @logger = opts.delete(:logger) || default_logger
+      assign_http_options(opts)
+    end
+
+    def assign_http_options(opts)
       @debug = opts.delete(:debug) || false
       @debug_output = opts.delete(:debug_output) || $stdout
       @open_timeout = opts.delete(:open_timeout) || DEFAULT_OPEN_TIMEOUT
       @read_timeout = opts.delete(:read_timeout) || DEFAULT_READ_TIMEOUT
       @max_retries = opts.delete(:max_retries) || DEFAULT_MAX_RETRIES
       @retry_delay = opts.delete(:retry_delay) || DEFAULT_RETRY_DELAY
+    end
+
+    def default_logger
+      Logger.new($stdout, level: Logger::WARN)
     end
 
     def build_api_url
