@@ -26,24 +26,69 @@ class BusinessCentral::Object::PictureTest < Minitest::Test
         }.to_json
       )
     response = @picture.find_all
-    assert_equal response.first[:content_type], 'image\jpeg'
+    assert_equal 'image\jpeg', response.first[:content_type]
   end
 
-  def test_update
-    stub_request(:get, %r{companies\(#{@company_id}\)/items\(123\)/picture})
+  def test_update_uses_find_by_id
+    test_id = 1
+    test_etag = 'W/"pic-etag"'
+
+    stub_request(:get, %r{companies\(#{@company_id}\)/items\(123\)/picture\(#{test_id}\)})
       .to_return(
         status: 200,
         body: {
-          etag: '112',
+          '@odata.etag': test_etag,
+          id: test_id,
           contentType: 'image\jpeg'
         }.to_json
       )
 
-    stub_request(:patch, %r{companies\(#{@company_id}\)/items\(123\)/picture\(1\)/content})
+    stub_request(:patch, %r{companies\(#{@company_id}\)/items\(123\)/picture\(#{test_id}\)/content})
       .to_return(status: 204)
 
-    response = @picture.update(1, 'ImageData')
+    response = @picture.update(test_id, 'ImageData')
     assert response
+
+    # Verify it called find_by_id (GET with ID), not find_all (GET collection)
+    assert_requested(:get, /picture\(#{test_id}\)/, times: 1)
+  end
+
+  def test_update_sends_correct_etag
+    test_id = 1
+    test_etag = 'W/"correct-pic-etag"'
+
+    stub_request(:get, /picture\(#{test_id}\)/)
+      .to_return(
+        status: 200,
+        body: { '@odata.etag': test_etag, id: test_id }.to_json
+      )
+
+    stub_request(:patch, %r{picture\(#{test_id}\)/content})
+      .to_return(status: 204)
+
+    @picture.update(test_id, 'ImageData')
+
+    assert_requested(:patch, /content/) do |req|
+      assert_equal test_etag, req.headers['If-Match']
+    end
+  end
+
+  def test_update_sends_octet_stream_content_type
+    test_id = 1
+
+    stub_request(:get, /picture\(#{test_id}\)/)
+      .to_return(
+        status: 200,
+        body: { '@odata.etag': 'W/"etag"', id: test_id }.to_json
+      )
+
+    stub_request(:patch, /content/).to_return(status: 204)
+
+    @picture.update(test_id, 'ImageData')
+
+    assert_requested(:patch, /content/) do |req|
+      assert_equal 'application/octet-stream', req.headers['Content-Type']
+    end
   end
 
   def test_delete
@@ -52,7 +97,7 @@ class BusinessCentral::Object::PictureTest < Minitest::Test
       .to_return(
         status: 200,
         body: {
-          etag: '113',
+          '@odata.etag': '113',
           contentType: 'image\jpeg'
         }.to_json
       )
