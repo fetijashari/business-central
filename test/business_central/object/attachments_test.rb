@@ -25,7 +25,7 @@ class BusinessCentral::Object::AttachmentsTest < Minitest::Test
       )
 
     response = @attachment.find_all
-    assert_equal response.first[:file_name], 'attachment1.pdf'
+    assert_equal 'attachment1.pdf', response.first[:file_name]
   end
 
   def test_find_by_id
@@ -40,7 +40,7 @@ class BusinessCentral::Object::AttachmentsTest < Minitest::Test
       )
 
     response = @attachment.find_by_id(test_id)
-    assert_equal response[:file_name], 'attachment2.jpg'
+    assert_equal 'attachment2.jpg', response[:file_name]
   end
 
   def test_where
@@ -59,7 +59,7 @@ class BusinessCentral::Object::AttachmentsTest < Minitest::Test
       )
 
     response = @attachment.where(test_filter)
-    assert_equal response.first[:file_name], 'attachment3.png'
+    assert_equal 'attachment3.png', response.first[:file_name]
   end
 
   def test_create
@@ -74,43 +74,118 @@ class BusinessCentral::Object::AttachmentsTest < Minitest::Test
     response = @attachment.create(
       file_name: 'attachment4.gif'
     )
-    assert_equal response[:file_name], 'attachment4.gif'
+    assert_equal 'attachment4.gif', response[:file_name]
   end
 
-  def test_update
+  def test_update_fetches_etag_before_patching
     test_parent_id = '011123'
     test_attachment_id = '11123'
-    stub_request(:get, /attachments\(parentId=#{test_parent_id},id=#{test_attachment_id}\)/)
+    test_etag = 'W/"etag-112"'
+
+    stub_request(:get, /attachments\(#{test_attachment_id}\)/)
       .to_return(
         status: 200,
         body: {
-          etag: '112',
+          '@odata.etag': test_etag,
+          id: test_attachment_id,
           fileName: 'attachment5.pdf'
         }.to_json
       )
 
     stub_request(:patch, /attachments\(parentId=#{test_parent_id},id=#{test_attachment_id}\)/)
-      .to_return(
-        status: 200,
-        body: {
-          fileName: 'attachment6.pdf'
-        }.to_json
-      )
+      .to_return(status: 204)
 
-    response = @attachment.update(
+    @attachment.update(
       parent_id: test_parent_id,
       attachment_id: test_attachment_id,
-      file_name: 'attachment6.pdf'
+      content: 'file bytes'
     )
-    assert_equal response[:file_name], 'attachment6.pdf'
+
+    assert_requested(:get, /attachments\(#{test_attachment_id}\)/, times: 1)
+    assert_requested(:patch, /content/, times: 1)
   end
 
-  def test_delete
+  def test_update_sends_correct_etag
+    test_parent_id = '011123'
+    test_attachment_id = '11123'
+    test_etag = 'W/"correct-etag"'
+
+    stub_request(:get, /attachments\(#{test_attachment_id}\)/)
+      .to_return(
+        status: 200,
+        body: { '@odata.etag': test_etag, id: test_attachment_id }.to_json
+      )
+
+    stub_request(:patch, /content/).to_return(status: 204)
+
+    @attachment.update(
+      parent_id: test_parent_id,
+      attachment_id: test_attachment_id,
+      content: 'data'
+    )
+
+    assert_requested(:patch, /content/) do |req|
+      assert_equal test_etag, req.headers['If-Match']
+    end
+  end
+
+  def test_update_sends_octet_stream_content_type
+    test_parent_id = '011123'
+    test_attachment_id = '11123'
+
+    stub_request(:get, /attachments\(#{test_attachment_id}\)/)
+      .to_return(
+        status: 200,
+        body: { '@odata.etag': 'W/"etag"', id: test_attachment_id }.to_json
+      )
+
+    stub_request(:patch, /content/).to_return(status: 204)
+
+    @attachment.update(
+      parent_id: test_parent_id,
+      attachment_id: test_attachment_id,
+      content: 'data'
+    )
+
+    assert_requested(:patch, /content/) do |req|
+      assert_equal 'application/octet-stream', req.headers['Content-Type']
+    end
+  end
+
+  def test_delete_fetches_etag_before_deleting
     test_attachment_id = '11124'
+    test_etag = 'W/"delete-etag"'
+
+    stub_request(:get, /attachments\(#{test_attachment_id}\)/)
+      .to_return(
+        status: 200,
+        body: { '@odata.etag': test_etag, id: test_attachment_id }.to_json
+      )
 
     stub_request(:delete, /attachments\(#{test_attachment_id}\)/)
       .to_return(status: 204)
 
     assert @attachment.destroy(test_attachment_id)
+    assert_requested(:get, /attachments\(#{test_attachment_id}\)/, times: 1)
+  end
+
+  def test_delete_sends_correct_etag
+    test_attachment_id = '11124'
+    test_etag = 'W/"specific-etag"'
+
+    stub_request(:get, /attachments\(#{test_attachment_id}\)/)
+      .to_return(
+        status: 200,
+        body: { '@odata.etag': test_etag, id: test_attachment_id }.to_json
+      )
+
+    stub_request(:delete, /attachments\(#{test_attachment_id}\)/)
+      .to_return(status: 204)
+
+    @attachment.destroy(test_attachment_id)
+
+    assert_requested(:delete, /attachments/) do |req|
+      assert_equal test_etag, req.headers['If-Match']
+    end
   end
 end
