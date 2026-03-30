@@ -10,18 +10,28 @@ class BusinessCentral::WebServiceTest < Minitest::Test
   end
 
   def test_build_object_url
-    @web_service.object('Company/Vendors')
-    assert_equal @web_service.object_url, 'Company/Vendors'
+    ws = @web_service.object('Company/Vendors')
+    assert_equal 'Company/Vendors', ws.object_url
   end
 
   def test_build_object_url_with_array_template_values
-    @web_service.object("Company('?')", 'business1')
-    assert_equal @web_service.object_url, "Company('business1')"
+    ws = @web_service.object("Company('?')", 'business1')
+    assert_equal "Company('business1')", ws.object_url
   end
 
   def test_build_object_url_with_hash_template_values
-    @web_service.object("Company(':business_name')", business_name: 'business1')
-    assert_equal @web_service.object_url, "Company('business1')"
+    ws = @web_service.object("Company(':business_name')", business_name: 'business1')
+    assert_equal "Company('business1')", ws.object_url
+  end
+
+  def test_object_returns_new_instance
+    ws = @web_service.object('Company')
+    refute_same @web_service, ws
+  end
+
+  def test_original_not_mutated_by_object
+    @web_service.object('Company')
+    assert_nil @web_service.object_url
   end
 
   def test_object_get_request
@@ -38,7 +48,7 @@ class BusinessCentral::WebServiceTest < Minitest::Test
       )
 
     response = @web_service.object('Company').get
-    assert_equal response.first[:display_name], 'business1'
+    assert_equal 'business1', response.first[:display_name]
   end
 
   def test_object_post_request
@@ -53,7 +63,7 @@ class BusinessCentral::WebServiceTest < Minitest::Test
     response = @web_service.object('Company').post(
       display_name: 'business2'
     )
-    assert_equal response[:display_name], 'business2'
+    assert_equal 'business2', response[:display_name]
   end
 
   def test_object_patch_request
@@ -78,7 +88,7 @@ class BusinessCentral::WebServiceTest < Minitest::Test
     response = @web_service.object("Company('?')", test_company_name).patch(
       { display_name: 'business4' }
     )
-    assert_equal response[:display_name], 'business4'
+    assert_equal 'business4', response[:display_name]
   end
 
   def test_object_delete_request
@@ -96,5 +106,11 @@ class BusinessCentral::WebServiceTest < Minitest::Test
       .to_return(status: 204)
 
     assert @web_service.object("Company('?')", test_company_name).delete
+  end
+
+  def test_raises_without_object_url
+    assert_raises(BusinessCentral::InvalidObjectURLException) do
+      @web_service.get
+    end
   end
 end
