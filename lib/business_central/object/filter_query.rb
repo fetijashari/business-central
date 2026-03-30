@@ -9,7 +9,7 @@ module BusinessCentral
 
       class << self
         def sanitize(query = '', values = [])
-          return encode_url_params(query) if values.length.zero?
+          return encode_url_params(query) if values.empty?
 
           query = replace_template_with_value(query, values)
           encode_url_params(query)
