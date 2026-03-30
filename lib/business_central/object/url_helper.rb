@@ -15,7 +15,7 @@ module BusinessCentral
 
       def odata_encode(value)
         value = value.dup
-        value.gsub!(/'/, "''") if value.instance_of?(String) && value =~ /'/
+        value.gsub!('\'', "''") if value.instance_of?(String) && value =~ /'/
         value.to_s
       end
 
@@ -35,7 +35,7 @@ module BusinessCentral
       end
 
       def replace_template_with_array_values(query, values)
-        query.scan(/\?/).each_with_index do |_character, index|
+        query.scan('?').each_with_index do |_character, index|
           character_position = query =~ /\?/
           query[character_position] = odata_encode(values[index])
         end
