@@ -14,7 +14,7 @@ class BusinessCentral::Object::CompaniesTest < Minitest::Test
       .to_return(
         status: 200,
         body: {
-          'value': [
+          value: [
             {
               displayName: 'business1'
             }
