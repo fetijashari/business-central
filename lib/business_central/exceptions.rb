@@ -4,12 +4,6 @@ module BusinessCentral
   class BusinessCentralError < StandardError; end
 
   class ApiException < BusinessCentralError
-    def initialize(message)
-      @message = message
-      super
-    end
-
-    attr_reader :message
   end
 
   class CompanyNotFoundException < BusinessCentralError
