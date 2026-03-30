@@ -37,14 +37,15 @@ module BusinessCentral
       private
 
       def process
-        if @response.is_a?(String)
+        case @response
+        when String
           @results = @response
-        elsif @response.is_a?(Array)
+        when Array
           @results = []
           @response.each do |data|
             @results << convert(data)
           end
-        elsif @response.is_a?(Hash)
+        when Hash
           @results = convert(@response)
         end
       end

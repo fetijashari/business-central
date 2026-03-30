@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'business_central/version'
@@ -14,9 +16,9 @@ Gem::Specification.new do |spec|
 
   spec.metadata['source_code_uri'] = 'https://github.com/JDrizzy/business-central'
   spec.metadata['changelog_uri'] = 'https://github.com/JDrizzy/business-central/releases'
+  spec.metadata['rubygems_mfa_required'] = 'true'
 
   spec.files = Dir['LICENSE.txt', 'README.md', 'lib/**/*']
-  spec.test_files = `git ls-files -- test/*`.split("\n")
   spec.require_paths = ['lib']
 
   spec.add_development_dependency 'bundler', '~> 2.2'
@@ -28,5 +30,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rubocop', '~> 1.32'
   spec.add_development_dependency 'simplecov', '~> 0.21'
   spec.add_development_dependency 'webmock', '~> 3.12'
-  spec.add_runtime_dependency 'oauth2', '~> 2'
+  spec.add_dependency 'oauth2', '~> 2'
 end

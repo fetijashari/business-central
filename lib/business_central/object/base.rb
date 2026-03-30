@@ -75,8 +75,8 @@ module BusinessCentral
         URLBuilder.new(
           base_url: client.url,
           object_path: @object_path,
-          object_id: object_id,
-          filter: filter
+          object_id:,
+          filter:
         ).build
       end
     end

@@ -15,7 +15,7 @@ module BusinessCentral
     end
 
     def object(object_url = '', *values)
-      if values.length.zero?
+      if values.empty?
         @object_url = object_url
         return self
       end
@@ -73,7 +73,7 @@ module BusinessCentral
     def build_url(filter: '')
       Object::URLBuilder.new(
         base_url: "#{@url}/#{@object_url}",
-        filter: filter
+        filter:
       ).build
     end
   end

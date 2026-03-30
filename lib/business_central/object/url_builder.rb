@@ -9,7 +9,7 @@ module BusinessCentral
 
       class << self
         def sanitize(query = '', values = [])
-          return encode_url_params(query) if values.length.zero?
+          return encode_url_params(query) if values.empty?
 
           query = replace_template_with_value(query, values)
           encode_url_object(query)
@@ -38,12 +38,12 @@ module BusinessCentral
         return '' if @object_path.empty?
 
         @object_path.map do |parent|
-          if !parent[:id].nil?
-            "/#{parent[:path]}(#{parent[:id]})"
-          else
+          if parent[:id].nil?
             "/#{parent[:path]}"
+          else
+            "/#{parent[:path]}(#{parent[:id]})"
           end
-        end.join('')
+        end.join
       end
 
       def build_child_path

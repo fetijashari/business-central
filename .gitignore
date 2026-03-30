@@ -9,3 +9,4 @@
 *.gem
 .byebug_history
 test.rb
+.todos/

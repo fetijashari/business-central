@@ -10,7 +10,7 @@ module BusinessCentral
           klass = BusinessCentral::Object.const_get(object_name.to_s.to_class_sym)
           klass.new(self, **params)
         else
-          BusinessCentral::Object::Base.new(self, **params.merge!({ object_name: object_name }))
+          BusinessCentral::Object::Base.new(self, **params.merge!({ object_name: }))
         end
       end
 

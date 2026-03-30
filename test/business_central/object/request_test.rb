@@ -14,7 +14,7 @@ class BusinessCentral::Object::RequestTest < Minitest::Test
       .to_return(
         status: 200,
         body: {
-          'value': [
+          value: [
             {
               displayName: 'value1'
             }
@@ -32,7 +32,7 @@ class BusinessCentral::Object::RequestTest < Minitest::Test
       .to_return(
         status: 200,
         body: {
-          'value': [
+          value: [
             {
               displayName: 'value2'
             }
@@ -50,7 +50,7 @@ class BusinessCentral::Object::RequestTest < Minitest::Test
       .to_return(
         status: 200,
         body: {
-          'value': [
+          value: [
             {
               displayName: 'value3'
             }
