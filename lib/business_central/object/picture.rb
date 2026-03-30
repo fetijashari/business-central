@@ -7,7 +7,8 @@ module BusinessCentral
 
       def update(id, data)
         object = find_all
-        Request.call(:patch, @client, "#{build_url(object_id: id)}/content", etag: object[:etag], params: {}) do |request|
+        url = "#{build_url(object_id: id)}/content"
+        Request.call(:patch, @client, url, etag: object[:etag], params: {}) do |request|
           request['Content-Type'] = 'application/octet-stream'
           request.body = data
         end
