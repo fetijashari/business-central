@@ -6,7 +6,7 @@ module BusinessCentral
       using Refinements::Strings
 
       def encode_url_object(object)
-        URI::DEFAULT_PARSER.escape(object)
+        URI::RFC2396_PARSER.escape(object)
       end
 
       def encode_url_params(query)

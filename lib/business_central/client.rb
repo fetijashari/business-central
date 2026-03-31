@@ -136,7 +136,7 @@ module BusinessCentral
     end
 
     def default_logger
-      Logger.new($stdout, level: Logger::WARN)
+      Logger.new(File::NULL)
     end
 
     def build_api_url
