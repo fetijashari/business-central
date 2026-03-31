@@ -157,4 +157,14 @@ class BusinessCentral::ClientSecurityTest < Minitest::Test
     second = client.send(:oauth2_client)
     assert_same first, second
   end
+
+  def test_oauth2_client_uses_request_body_auth_scheme
+    client = BusinessCentral::Client.new(
+      application_id: 'test-id',
+      secret_key: 'test-secret',
+      oauth2_login_url: 'https://login.microsoftonline.com/tenant'
+    )
+    oauth_client = client.send(:oauth2_client)
+    assert_equal :request_body, oauth_client.options[:auth_scheme]
+  end
 end
