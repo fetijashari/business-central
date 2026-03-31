@@ -157,7 +157,8 @@ module BusinessCentral
         @secret_key,
         site: @oauth2_login_url,
         authorize_url: 'oauth2/authorize?resource=https://api.businesscentral.dynamics.com',
-        token_url: 'oauth2/token?resource=https://api.businesscentral.dynamics.com'
+        token_url: 'oauth2/token?resource=https://api.businesscentral.dynamics.com',
+        auth_scheme: :request_body
       )
     end
 
