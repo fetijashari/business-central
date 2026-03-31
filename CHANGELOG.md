@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `SECURITY.md` with vulnerability reporting policy and security best practices
 
 ### Fixed
+- OAuth2 client now uses `auth_scheme: :request_body` for Azure AD compatibility (v2.x gem changed the default to `:basic_auth` which Microsoft rejects)
 - `Picture.update` now fetches the correct picture by ID instead of calling `find_all`, which returned an array and produced an incorrect etag
 - `Attachments.update` now sends the real etag in `If-Match` instead of the string `'application/json'`
 - `Attachments.update` now sends `application/octet-stream` content type for binary content uploads
